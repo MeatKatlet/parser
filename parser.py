@@ -25,9 +25,9 @@ import re
     #сохранение результата в бд Mysql
 
 
-#получить список прокси
-#для всех запросов делать подменю user-agent и сделать прокси ip
-#задержка по рандому - sleep(....)
+#todo получить список прокси
+#todo для всех запросов делать подмену user-agent и сделать прокси ip
+#todo задержка по рандому - sleep(....)
 def get_page_url(page):
     url = 'https://nn.cian.ru/cat.php?deal_type=sale&engine_version=2&object_type%5B0%5D=1&offer_type=flat'
     url += "&p="+str(page)
@@ -41,12 +41,12 @@ def get_html(url):
 def get_total_visible_pages(html):
     soup = BeautifulSoup(html, 'lxml')
     regex = re.compile('.*-list-.*')
-    regex2 = re.compile('.*-list-item-.*')
-    a = soup.find('div', id='frontend-serp').find('ul', {"class" : regex}).find_all('li', {"class" : regex2})[-1].contents[0]#getText()
-    a_text = a.getText()
+    #regex2 = re.compile('.*-list-item-.*')
+    a = soup.find('div', id='frontend-serp').find('ul', {"class" : regex}).contents[-1].contents[-1]
+    a_text = a.text
     page_raw = a.get('href').split("&")[4]
     page_pure = page_raw.split("=")[1]
-    total_visible = int(page_raw)
+    total_visible = int(page_pure)
     if a_text=="..":
         total_end = False
     else:
@@ -56,14 +56,23 @@ def get_total_visible_pages(html):
 
 def get_all_links(html):
     soup = BeautifulSoup(html, 'lxml')
-    tds = soup.find('table', id='currencies-all').find_all('td', class_='currency-name')
-    links = []
-    for td in tds:
-        a = td.find('a', class_='currency-name-container').get('href')
-        link = 'https://coinmarketcap.com' + a
-        links.append(link)
-    return links
+    cont = soup.find('div', id='frontend-serp')
+    regex = re.compile('.*-card-.*')
+    regex2 = re.compile('.*-main-info-.*')
+    regex3 = re.compile('.*-header-.*')
 
+    all_cards_containers = cont.find_all('div',{"class" : regex})
+    l = len(all_cards_containers.contents)
+    card_urls = []
+
+    for card_container_i in range(0,l):
+        card_container = all_cards_containers.contents[card_container_i]
+        sub_container = card_container.find("div",{"class" : regex2})
+        a = sub_container.find("a",{"class" : regex3})
+        href = a.get("href")
+        card_urls.append(href)
+
+    return card_urls
 
 def text_before_word(text, word):
     line = text.split(word)[0].strip()
@@ -71,6 +80,7 @@ def text_before_word(text, word):
 
 
 def get_flat_card_data(html):
+    #todo доделать получение данных с карточки товара!
     soup = BeautifulSoup(html, 'lxml')
     try:
         name = text_before_word(soup.find('title').text, 'price')
@@ -84,6 +94,8 @@ def get_flat_card_data(html):
     return data
 
 def save_flat_card_data(data):
+    #todo доделать сохранение данных в бд, какой она должна быть?
+    #сохранять батчами?
     pass
 
 
