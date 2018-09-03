@@ -5,8 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 import mysql.connector
 import re
-
-
+from random import choice, uniform
+from time import sleep
+import json
 #1.парсим объявления в одном городе вторичка
 #для этого надо иметь ссылку-критерий поиска с параметрами
 
@@ -34,8 +35,19 @@ def get_page_url(page):
     url += "&region=4733&room1=1&room2=1"
     return url
 
-def get_html(url):
-    response = requests.get(url)
+def get_html(url,proxies,useragents):
+
+    for i in range(len(proxies)):#по списку прокси!
+        sleep(uniform(3, 6))
+
+        proxy = {'https': 'https://194.85.169.208:3128' }#+ choice(proxies)
+        useragent = {'User-Agent': choice(useragents)}
+        try:
+            response = requests.get(url, headers=useragent, proxies=proxy)
+            break
+        except:
+            continue
+
     return response.text
 
 def get_total_visible_pages(html):
@@ -106,25 +118,59 @@ def write_csv(i, data):
         print(i, data['name'], 'parsed')
 
 
+def get_proxies():
+    #url = "http:/http://pubproxy.com/api/proxy?https=true/api.foxtools.ru/v2/Proxy?cp=UTF-8&lang=Auto&type=HTTP&anonymity=High&available=Yes&free=Yes&formatting=1"
+    url = "http://pubproxy.com/api/proxy?https=true"
+    result = []
+    for i in range(0,10):
+        while True:
+            response = requests.get(url)
+            if (response.status_code == 502):  # , response.text.find("502 Bad Gateway") > 0
+                print("Bad Gateway... REPEAT")
+                continue
+            else:
+
+                break
+        ip = json.loads(response.text)["data"][0]["ipPort"]
+        result.append(ip)
+
+    """
+    l = len(json1["response"]["items"])
+    result = []
+    for i in range(0,l):
+        if json1["response"]["items"][i]["available"]=="Yes":
+            result.append(str(json1["response"]["items"][i]["ip"])+":"+str(json1["response"]["items"][i]["port"]))
+    """
+
+
+    if len(result)==0:
+        exit(1)
+
+    return result
 
 def main():
     start = datetime.now()
     url = 'https://nn.cian.ru/cat.php?deal_type=sale&engine_version=2&object_type%5B0%5D=1&offer_type=flat&p=1&region=4733&room1=1&room2=1'
 
+    proxies = get_proxies()
+    useragents = open('user_agents.txt').read().split('\n')
+    url = 'https://whoer.net/ru'
+    u = get_html(url, proxies, useragents)
+
     total_end = False
     current_page = 0
     while total_end==False:
-        total_visible, total_end = get_total_visible_pages(get_html(url))
+        total_visible, total_end = get_total_visible_pages(get_html(url,proxies,useragents))
         #total_visible #текущая видимая последняя страница в пагинации
         current_page +=1
         for page in range(current_page,total_visible,1):#начать с порследней посещенной +1, надо по страницу .. включительно!
             #переход по странице пагинации
 
-            all_links = get_all_links(get_html(get_page_url(page)))
+            all_links = get_all_links(get_html(get_page_url(page),proxies,useragents))
             for i, link in enumerate(all_links):
                 #заходим в каждую карточку, собираем инфк о квартире
 
-                data = get_flat_card_data(get_html(link))
+                data = get_flat_card_data(get_html(link,proxies,useragents))
                 save_flat_card_data(data)
 
         current_page = current_page#последняя посещенная страница
