@@ -26,9 +26,9 @@ import json
     #сохранение результата в бд Mysql
 
 
-#todo получить список прокси
-#todo для всех запросов делать подмену user-agent и сделать прокси ip
-#todo задержка по рандому - sleep(....)
+#получить список прокси
+#для всех запросов делать подмену user-agent и сделать прокси ip
+#задержка по рандому - sleep(....)
 def get_page_url(page):
     url = 'https://nn.cian.ru/cat.php?deal_type=sale&engine_version=2&object_type%5B0%5D=1&offer_type=flat'
     url += "&p="+str(page)
@@ -40,7 +40,7 @@ def get_html(url,proxies,useragents):
     for i in range(len(proxies)):#по списку прокси!
         sleep(uniform(3, 6))
 
-        proxy = {'https': 'https://194.85.169.208:3128' }#+ choice(proxies)
+        proxy = {'https': 'https://' +choice(proxies)}#+ choice(proxies)
         useragent = {'User-Agent': choice(useragents)}
         try:
             response = requests.get(url, headers=useragent, proxies=proxy)
@@ -94,15 +94,130 @@ def text_before_word(text, word):
 def get_flat_card_data(html):
     #todo доделать получение данных с карточки товара!
     soup = BeautifulSoup(html, 'lxml')
+    data = {}
     try:
+        #заголовок объекта
         name = text_before_word(soup.find('title').text, 'price')
+
     except:
         name = ''
     try:
-        price = text_before_word(soup.find('div',class_='col-xs-6 col-sm-8 col-md-4 text-left').text, 'USD')
+        #rice = text_before_word(soup.find('div',class_='col-xs-6 col-sm-8 col-md-4 text-left').text, 'USD')
+        #географический адрес под заголовком
     except:
         price = ''
-    data = {'name': name,'price': price}
+
+    try:
+        #
+        #цена, цена за кв м
+        #процентная ставка за ипотеку?
+        #
+    except:
+        price = ''
+
+    try:
+        #общая, жилая, кухня
+        #
+    except:
+        price = ''
+
+    try:
+        #текстовое описание + код объекта
+        #
+    except:
+        price = ''
+
+    try:
+        #текстовое описание
+        #
+    except:
+        price = ''
+
+
+    try:
+        #общая информация - лоджия
+        #
+    except:
+        price = ''
+
+    try:
+        #может быть больше характеристик, надо доплнительные складывать в отдельное поле
+        #Количество комнат
+
+        #Этаж
+
+        #Этажей в доме
+
+        #Тип дома
+
+        #Совмещённый санузел
+        ##
+    except:
+        price = ''
+
+    try:
+        #о доме - все поля!
+        #Год постройки
+        #Материалы стен
+        #Этажность
+        #Подъездов
+        #Квартир
+        #
+    except:
+        price = ''
+
+    try:
+        # о районе  - все поля!
+
+    except:
+        price = ''
+    try:
+        # имя фамилия продавца
+        #тип аккаунта - pro или нет
+        #как давно на циане? 5 месяцев на ЦИАН
+        #телефон
+
+    except:
+        price = ''
+
+    try:
+        #дата-время посещения продавцом карточки
+
+    except:
+        price = ''
+
+    try:
+        #дата создания объявления!!!!
+        #количество просмотров за последние 10 дней
+
+    except:
+        price = ''
+
+    try:
+        #тип объявления - преимиум?
+
+
+    except:
+        price = ''
+
+    try:
+        #координаты на карте? координаты соседей?
+
+
+    except:
+        price = ''
+
+    try:
+        #есть ли фото, их количество
+
+
+    except:
+        price = ''
+
+    data = {
+        'name': name,
+        'price': price
+    }
     return data
 
 def save_flat_card_data(data):
@@ -117,13 +232,42 @@ def write_csv(i, data):
         writer.writerow((data['name'],data['price']))
         print(i, data['name'], 'parsed')
 
+def get_proxies2():
+    url = "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list.txt"
+    response = False
+    for i in range(0,10):
+        sleep(5)
+        response = requests.get(url)
+        if (response.status_code == 502):  # , response.text.find("502 Bad Gateway") > 0
+            print("Bad Gateway... REPEAT")
+            continue
+        else:
+
+            break
+    if response != False:
+        lines = response.text.split('\n')
+        result = []
+        for row in range(4,len(lines)):
+            line = lines[row]
+            if line == "":
+                break
+            parts = line.split(" ")
+            proxie_type = parts[1].split("-")
+            if len(proxie_type)==3 and proxie_type[2][0]=="S" and (proxie_type[1]=="A" or proxie_type[1]=="H"):
+
+                result.append(parts[0])
+
+        return result
 
 def get_proxies():
     #url = "http:/http://pubproxy.com/api/proxy?https=true/api.foxtools.ru/v2/Proxy?cp=UTF-8&lang=Auto&type=HTTP&anonymity=High&available=Yes&free=Yes&formatting=1"
     url = "http://pubproxy.com/api/proxy?https=true"
+    url = "https://gimmeproxy.com/api/getProxy?supportsHttps=true"
+
     result = []
     for i in range(0,10):
         while True:
+            sleep(5)
             response = requests.get(url)
             if (response.status_code == 502):  # , response.text.find("502 Bad Gateway") > 0
                 print("Bad Gateway... REPEAT")
@@ -131,17 +275,10 @@ def get_proxies():
             else:
 
                 break
-        ip = json.loads(response.text)["data"][0]["ipPort"]
+        #ip = json.loads(response.text)["data"][0]["ipPort"]
+        data = json.loads(response.text)
+        ip = data["ip"]+":"+str(data["port"])
         result.append(ip)
-
-    """
-    l = len(json1["response"]["items"])
-    result = []
-    for i in range(0,l):
-        if json1["response"]["items"][i]["available"]=="Yes":
-            result.append(str(json1["response"]["items"][i]["ip"])+":"+str(json1["response"]["items"][i]["port"]))
-    """
-
 
     if len(result)==0:
         exit(1)
@@ -152,10 +289,13 @@ def main():
     start = datetime.now()
     url = 'https://nn.cian.ru/cat.php?deal_type=sale&engine_version=2&object_type%5B0%5D=1&offer_type=flat&p=1&region=4733&room1=1&room2=1'
 
-    proxies = get_proxies()
+    #proxies = get_proxies()
+    proxies = get_proxies2()
     useragents = open('user_agents.txt').read().split('\n')
-    url = 'https://whoer.net/ru'
-    u = get_html(url, proxies, useragents)
+    #proxies = open('proxies.txt').read().split('\n')
+
+    #url = 'https://whoer.net/ru'
+    #u = get_html(url, proxies, useragents)
 
     total_end = False
     current_page = 0
