@@ -94,49 +94,92 @@ def text_before_word(text, word):
 def get_flat_card_data(html):
     #todo доделать получение данных с карточки товара!
     soup = BeautifulSoup(html, 'lxml')
+    card_cont = soup.find('div', id='frontend-offer-card')
     data = {}
     try:
+        regex = re.compile('.*-header-information-.*')
+        regex2 = re.compile('.*-title-.*')
+        name = card_cont.find('div', {"class": regex}).find("h1",{"class": regex2}).text
         #заголовок объекта
-        name = text_before_word(soup.find('title').text, 'price')
+
 
     except:
         name = ''
+
     try:
-        #rice = text_before_word(soup.find('div',class_='col-xs-6 col-sm-8 col-md-4 text-left').text, 'USD')
+        regex = re.compile('.*-header-information-.*')
+        regex2 = re.compile('.*-geo-.*')
+        regex3 = re.compile('.*-address-.*')
+        adress_elems = card_cont.find('div', {"class": regex}).find("div", {"class": regex2}).find("adress", {"class": regex3}).contents
+        l = len(adress_elems)
+        result = []
+        for i in range(0, l):
+            if adress_elems[i].name == "a":
+                adress_el = adress_elems[i].text
+                result.append(adress_el)
         #географический адрес под заголовком
+
     except:
         price = ''
 
     try:
         #
         #цена, цена за кв м
-        #процентная ставка за ипотеку?
+        #todo процентная ставка за ипотеку?
         #
+        regex = re.compile('.*-price-container-.*')
+        regex2 = re.compile('.*-price_value-.*')
+        regex3 = re.compile('.*-price_per_meter-.*')
+
+
+        price = card_cont.find('div', {"class": regex}).find("span",{"class": regex2}).find("span",{"itemprop": "price"}).text
+
+        val = price.replace("&nbsp;", "").replace(" ", "")[0:-1]
+        currency = price.replace("&nbsp;", "").replace(" ", "")[-1]
+
+        raw_ppsm = card_cont.find('div', {"class": regex}).find("div", {"class": regex3}).text
+        ppsm = raw_ppsm.replace("&nbsp;", "").replace(" ", "")[0:-4]
+
     except:
         price = ''
 
     try:
         #общая, жилая, кухня
+
+
+        props = card_cont.find('div', id='description').contents[0].contents
+        #l = len(props)
+        result = []
+        for i in range(0, 3):#только 3 , 5 из 5 не берем
+            prop_name = props[i].contents[0].text
+            prop_raw_value = props[i].contents[1].text
+            prop_value = prop_raw_value.replace(" ", "")[0:-2]#без метров ккв
+
+
         #
     except:
         price = ''
 
     try:
         #текстовое описание + код объекта
-        #
-    except:
-        price = ''
+        description = card_cont.find('div', id='description').find("p",{"itemprop": "description"}).text
 
-    try:
-        #текстовое описание
         #
     except:
         price = ''
 
 
     try:
-        #общая информация - лоджия
+        #общая информация - лоджия ...
         #
+        regex = re.compile('.*-container-.*')
+
+        elems = card_cont.find('ul', {"class": regex}).contents
+        l = len(elems)
+        result = []
+        for i in range(0, l):
+            result.append(elems[i].text)
+
     except:
         price = ''
 
@@ -151,6 +194,13 @@ def get_flat_card_data(html):
         #Тип дома
 
         #Совмещённый санузел
+        regex = re.compile('.*-container-.*')
+        els = card_cont.find('ul', {"class": regex}).parent.find("article",{"class": regex}).contents[0].contents
+        l = len(els)
+        result = []
+        for i in range(0, l):
+            prop_name = els[i].contents[0]
+            prop_val = els[i].contents[1]
         ##
     except:
         price = ''
@@ -163,6 +213,22 @@ def get_flat_card_data(html):
         #Подъездов
         #Квартир
         #
+        regex = re.compile('.*-offer_card_page-bti-.*')
+        elems = card_cont.find('div', {"class": regex}).contents[0].contents[0].contents[1].contents[0]# 1 колонка
+        l = len(elems)
+        result = []
+        for i in range(0, l):
+            prop_name = elems[i].contents[0]
+            prop_val = elems[i].contents[1]
+
+        elems = card_cont.find('div', {"class": regex}).contents[0].contents[0].contents[1].contents[1]# 2 колонка
+        l = len(elems)
+        result = []
+        for i in range(0, l):
+            prop_name = elems[i].contents[0]
+            prop_val = elems[i].contents[1]
+
+
     except:
         price = ''
 
